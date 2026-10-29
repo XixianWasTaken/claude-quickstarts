@@ -32,7 +32,7 @@ pytest agents/evals -q
 python -m agents.evals.run_evals --label baseline
 
 # try a change, e.g. a new system prompt, with the LLM judge and 3 repeats per case
-python -m agents.evals.run_evals --label prompt-v2 --system prompt_v2.txt --judge --repeat 3
+python -m agents.evals.run_evals --label prompt-v2 --system agents/evals/prompt_v2.txt --judge --repeat 3
 
 # compare
 python -m agents.evals.run_evals --compare results/baseline.json results/prompt-v2.json
@@ -55,7 +55,27 @@ Supported `expect` keys: `tools_called`, `tools_not_called`, `max_tool_calls`,
 
 ## Results
 
-| Run | Pass rate | Avg tool calls | Avg tokens | Notes |
+Model `claude-sonnet-5-5`, 12 cases × 3 repeats = 36 runs per row, LLM judge
+off. Both rows were run on 2026-10-29 with:
+
+```bash
+python -m agents.evals.run_evals --label baseline --repeat 3
+python -m agents.evals.run_evals --label prompt-v2 --system agents/evals/prompt_v2.txt --repeat 3
+```
+
+| Run | Pass rate | Avg tool calls | Avg tokens (in / out) | Notes |
 |---|---|---|---|---|
-| baseline | _fill in_ | | | default system prompt |
-| | | | | |
+| baseline | 92% (33/36) | 1.44 | 1200 / 183 | default system prompt; `calc_basic` failed 3/3 because the answer was `**7,006,652**`, so the check for `7006652` missed it |
+| prompt-v2 | 100% (36/36) | 1.42 | 1200 / 175 | [`prompt_v2.txt`](prompt_v2.txt): default prompt plus one rule to report tool values exactly as returned; `calc_basic` passed 3/3, no regressions |
+
+The only difference between the runs is `calc_basic`. All three baseline
+answers gave the correct product, 7,006,652, with thousands separators, so
+the failure was in how the answer was formatted, not in the arithmetic.
+
+With the judge off, `calc_div_zero` and `missing_file` were graded on their
+tool checks only.
+
+The token figures come from `MessageHistory.message_tokens`, which counts
+each turn's input as the context growth since the previous turn, starting
+after the system prompt. They show how much context a run used, not billed
+input tokens, so the longer prompt-v2 system prompt doesn't show up in them.
