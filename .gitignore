@@ -1,0 +1,7 @@
+# Local secrets and environment
+.env
+.venv/
+.DS_Store
+
+# Output of agents/evals runs
+results/
